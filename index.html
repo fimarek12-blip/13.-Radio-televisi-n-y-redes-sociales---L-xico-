@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>Vocabulario Avanzado - Clase</title>
+    
+    <style>
+        :root { --p: #2c3e50; --a: #3498db; --bg: #f4f7f6; --ok: #27ae60; --bad: #e74c3c; }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg); 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh; 
+            margin: 0; 
+            padding: 20px 0;
+            box-sizing: border-box;
+            overflow-x: hidden;
+        }
+
+        /* Título centrado */
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.8rem;
+            text-align: center;
+        }
+
+        /* Botones para cambiar entre filas */
+        .row-selector {
+            display: flex;
+            gap: 10px;
+            width: 90vw;
+            max-width: 450px;
+            margin-bottom: 15px;
+        }
+
+        .row-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid var(--p);
+            border-radius: 10px;
+            background: white;
+            color: var(--p);
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .row-btn.active {
+            background: var(--p);
+            color: white;
+        }
+
+        .card-container { 
+            perspective: 1000px;
+            width: 90vw; 
+            max-width: 450px; 
+            height: 300px; 
+            cursor: pointer;
+            touch-action: manipulation; 
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .card { 
+            width: 100%;
+            height: 100%; 
+            position: relative; 
+            transition: transform 0.4s; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+            border-radius: 15px;
+            transform-style: preserve-3d;
+            -webkit-transform-style: preserve-3d;
+        }
+
+        .card.flipped { transform: rotateY(180deg); }
+
+        .face { 
+            position: absolute;
+            width: 100%; 
+            height: 100%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 25px; 
+            box-sizing: border-box; 
+            border-radius: 15px; 
+            text-align: center; 
+            font-size: 1.4rem;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+
+        .front { background: white; color: var(--p); font-weight: bold; border: 2px solid #ddd; }
+        .back { background: var(--a); color: white; transform: rotateY(180deg); font-size: 1.2rem; }
+
+        .controls { 
+            margin-top: 15px;
+            display: flex; 
+            gap: 10px; 
+            width: 90vw; 
+            max-width: 450px;
+        }
+
+        .action-controls {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+            width: 90vw;
+            max-width: 450px;
+        }
+
+        button { 
+            flex: 1;
+            padding: 15px 10px; 
+            border: none; 
+            border-radius: 12px; 
+            background: var(--p); 
+            color: white; 
+            font-size: 1rem; 
+            font-weight: bold;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        .btn-know { background: var(--ok); }
+        .btn-dont-know { background: var(--bad); }
+
+        .info { margin-top: 12px; font-weight: bold; color: #7f8c8d; }
+        
+        .btn-invert { 
+            background: #8e44ad; 
+            color: white; 
+            border: none;
+            border-radius: 12px;
+            padding: 15px; 
+            font-weight: bold; 
+            width: 90vw; 
+            max-width: 450px;
+            cursor: pointer; 
+            margin-bottom: 15px; 
+            font-size: 1rem;
+        }
+
+        /* Botón para reiniciar el progreso */
+        .btn-reset {
+            background: #7f8c8d;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 10px;
+            font-weight: normal;
+            width: 90vw;
+            max-width: 450px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+        .btn-reset:hover { opacity: 1; }
+
+        @media (max-height: 600px) {
+            .card-container { height: 220px; }
+            .face { font-size: 1.1rem; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>Radio, televisión y redes sociales</h1>
+    <button class="btn-invert" onclick="invertirIdiomas()">🔄 Invertir: <span id="modo-texto">Español ➡ Checo</span></button>
+
+    <div class="row-selector">
+        <button class="row-btn active" id="btn-fila-no" onclick="setFila('no')">Por aprender (<span id="count-no">0</span>)</button>
+        <button class="row-btn" id="btn-fila-si" onclick="setFila('si')">Ya aprendidas (<span id="count-si">0</span>)</button>
+    </div>
+
+    <div class="card-container" onclick="flip()">
+        <div class="card" id="c">
+            <div class="face front" id="q">Cargando...</div>
+            <div class="face back" id="a">...</div>
+        </div>
+    </div>
+
+    <div class="info" id="status">0 / 0</div>
+
+    <div class="controls">
+        <button onclick="prev()">⬅ Ant.</button>
+        <button onclick="shuffle()">🔀 Mezclar</button>
+        <button onclick="next()">Sig. ➡</button>
+    </div>
+
+    <div class="action-controls" id="eval-controls">
+        <button class="btn-dont-know" onclick="clasificarPalabra(false)">❌ No la sé</button>
+        <button class="btn-know" onclick="clasificarPalabra(true)">✔ Ya la sé</button>
+    </div>
+
+    <button class="btn-reset" onclick="reiniciarProgreso()">🗑 Reiniciar todo el progreso</button>
+
+<script>
+    // Tu lista original de palabras
+    const todasLasPalabras = [
+        {q: "aparato, m. de radio/ radio, f.", a: "rádio"},
+        {q: "transistor, m.", a: "tranzistor"}, 
+        {q: "cordón, m.", a: "kabel (šňůra)"},
+        {q: "cable, m.", a: "kabel"},
+        {q: "enchufe, m.", a: "zásuvka/zástrčka"},
+        {q: "adaptador, m.", a: "adaptér"},
+        {q: "alargador, m.", a: "prodlužovačka"},
+        {q: "dial, m.", a: "číselník"},
+        {q: "emisora, f", a: "rádiostanice"},
+        {q: "cadena, f., (pirata)", a: "pirátský (nelegální) kanál"},
+        {q: "funcionar/ir con/por pilas", a: "fungovat na baterky"},
+        {q: "televisión, f., en color x en blanco y negro", a: "barevná x černobílá televize"},
+        {q: "televisión, f., inteligente", a: "chytrá televize"},
+        {q: "* tele, f.", a: "televize (zkráceně a hovorově)"},
+        {q: "* caja, f. tonta", a: "bedna, debilbedna"},
+        {q: "pantalla, f.", a: "obrazovka"},
+        {q: "cadena, f./canal, m.,", a: "program"},
+        {q: "plataforma, f. (digital), de contenido bajo demanda", a: "(digitální) platforma obsahu na vyžádání"},
+        {q: "mando, m. (a distancia)", a: "dálkový ovladač"},
+        {q: "botón, m. de encendido/para encender", a: "tlačítko zapnutí"}, 
+	{q: "botón, m. de apagado/para apagar", a: "tlačítko vypnutí"},
+        {q: "encender/poner/enchufar x apagar/ quitar", a: "zapnout x vypnout"},
+        {q: "desenchufar (la tele, la radio)", a: "vypojit (televizi, rádio) ze zásuvky"},
+        {q: "abrir sesión, f. con una cuenta", a: "přihlásit se k účtu"},
+        {q: "cerrar sesión, f. con una cuenta", a: "odhlásit se z účtu"},
+        {q: "transmitir/emitir por radio", a: "vysílat rádiem"},
+        {q: "transmitir/emitir por televisión", a: "vysílat televizí"},
+        {q: "televisar", a: "vysílat v televizi"},
+        {q: "cubrir el territorio nacional", a: "pokrýt území státu"},
+        {q: "cobertura, f.", a: "pokrytí"},
+        {q: "salir en la tele", a: "být v televizi"},
+        {q: "dar/poner/echar una película en/por la tele", a: "dávat film v televizi"},
+        {q: "transmisión, f., en directo/en vivo x en diferido", a: "živé vysílání x ze záznamu"},
+        {q: "transmisor, m.", a: "vysílač"},
+        {q: "emisor, m. x receptor, m. (de señales)", a: "vysílač x přijímač (signálů)"},
+        {q: "onda, f., larga", a: "dlouhá vlna"},
+        {q: "onda, f., media", a: "střední vlna"},
+        {q: "onda, f., corta", a: "krátká vlna"},
+        {q: "onda, f., ultracorta", a: "velmi krátká vlna"},
+        {q: "longitud, f., de onda", a: "déla vlny/vlnění"},
+        {q: "emisión, f. local", a: "místní vysílání"},
+        {q: "emisión, f. comarcal", a: "oblastní vysílání"},
+        {q: "emisión, f. reg<ional", a: "regionální vysílaní"},
+        {q: "emisión, f. nacional", a: "národní vysílání"},
+        {q: "programa, m. vía satélite", a: "satelitní program"},
+        {q: "estreno, m. por /en televisión", a: "televizní premiéra"},
+        {q: "reponer un programa", a: "reprizovat/opakovat program"},
+        {q: "locutor/-a, m. y f.", a: "moderátor/ka"},
+        {q: "presentador/-a, m. y f.", a: ""},
+        {q: "periodista, m. y f.", a: "uvaděč"},
+        {q: "azafato/-a, m. y f.", a: "hostes/ka"},
+        {q: "animador/-a, m. y f.", a: "moderátor/ka"},
+        {q: "estudio, m., de grabación", a: "natáčecí studio"},
+        {q: "grabación, f.", a: "natáčení"},
+        {q: "micrófono, m.", a: "mikrofón"},
+        {q: "estar en el aire", a: "být ve vysílání, být v éteru"},
+        {q: "tener una gran x escasa audiencia", a: "mít velkou x malou diváckou základnu"},
+        {q: "escuchar la radio", a: "poslouchat rádio"},
+        {q: "ver la tele", a: "dívat se na televizi"},
+        {q: "coger una emisora de radio", a: "chytit stanici rádia"},
+        {q: "sintonizar una emisora de radio", a: "naladit stanici rádia"},
+        {q: "buscar una emisora de radio", a: "hledat stanici rádia"},
+        {q: "encontrar una emisora de radio", a: "najít stanici rádia"},
+        {q: "subir x bajar el volumen/la voz", a: "zvýšit x snížit hlasitost"},
+        {q: "perder las noticias", a: "nestihnout zprávy"},
+        {q: "oír en/por (la) radio", a: "slyšet něco v rádiu"},
+        {q: "interferencia, f.", a: "rušení"},
+        {q: "interferir", a: "rušit"},
+        {q: "tener una recepción/señal clara", a: "mít jasný příjem signálu"},
+        {q: "tener una recepción/señal satisfactoria", a: "mít uspokojivý příjem signálu"},
+        {q: "tener una recepción/señal limpia,", a: "mít čistý příjem signálu"},
+        {q: "tener una recepción/señal sin interferencias,", a: "mít příjem signálu bez rušení"},
+        {q: "conectar con la cadena/ el programa regional", a: "naladit místní televizní stanici"},
+        {q: "radioaficionado, m.", a: "radioamatér"},
+        {q: "teleaficionado, m.", a: "televizní nadšenec"},
+        {q: "oyente, m.", a: "posluchač"},
+        {q: "radioyente, m.", a: "posluchač rádia"},
+        {q: "televidente, m./telespectador, m.", a: "televizní divák"},
+        {q: "emisión, f., matinal", a: "ranní vysílání"},
+        {q: "emisión, f., de sobremesa", a: "odpolední vysílání"},
+        {q: "emisión, f., de tarde,", a: "večerní vysílání"},
+        {q: "emisión, f., de noche/nocturna", a: "noční vysílání"},
+        {q: "cierre, m. (de emisión)", a: "ukončení (vysílání)"},
+        {q: "avance, m. de programación", a: "televizní program"},
+        {q: "avance, m. informativo", a: "krátké zprávy"},
+        {q: "noticias, pl.f.", a: "zprávy (televizní)"},
+        {q: "informativo, m.", a: "zprávy"},
+        {q: "telediario, m.", a: "televizní noviny"},
+        {q: "primera, segunda, tercera... última edición del telediario", a: "první, druhá, třetí... poslední vydání televizních novin"},
+        {q: "reportaje, m.", a: "reportáž"},
+        {q: "debate, m.", a: "diskuze"},
+        {q: "entrevista, f.,", a: "rozhovor"},
+        {q: "concurso, m.", a: "soutěž"},
+        {q: "película, f.", a: "film"},
+        {q: "telefilme, m.", a: "televizní film"},
+        {q: "dibujos, pl.m. animados", a: "animovaný film"},
+        {q: "programa, m. infantil y juvenil", a: "program pro děti"},
+        {q: "programa, m. cultural", a: "kulturní program"},
+        {q: "programa, m. educativo", a: "vzdělávací program"},
+        {q: "programa, m. deportivo", a: "sportovní program"},
+        {q: "programa, m. de naturaleza", a: "program o přírodě"},
+        {q: "programa, m. humorístico/de humor", a: "humoristický program"},
+        {q: "programa, m. de entretenimiento", a: "zábavný program"},
+        {q: "programa, m. de actualidad", a: "publicistický program"},
+        {q: "programa, m. de telerrealidad", a: "reality show"},
+        {q: "hilo, m. musical", a: "podkresová hudba"},
+        {q: "los número uno", a: ""},
+        {q: "radionovela, f.", a: "rádiový seriál"},
+        {q: "telenovela, f./culebrón, m.", a: "telenovela"},
+        {q: "serial, m.", a: "seriál"},
+        {q: "serie, f. (documental)", a: "(dokumentární) série"},
+        {q: "ciclo, m. de películas", a: "filmový cyklus"},
+        {q: "pronóstico, m. de tiempo", a: "předpověď počasí"},
+        {q: "iniciar x finalizar (una serie)", a: "začít x ukončit (sérii)"},
+        {q: "empezar x acabar (una película)", a: "začít x ukončit (film)"},
+        {q: "cambio, m./alteración, f. de la programación", a: "změna v televizním programu"},
+        {q: "modificar la programación por razones ajenas", a: "změnit program z důvodu vyšší moci"},
+        {q: "modificar la programación a la voluntad de alguien", a: "změnit program na něčí přání"},
+        {q: "adelantar x atrasar un programa", a: "přeložit x odložit program"},
+        {q: "emitir el próximo día", a: "vysílat další den"},
+        {q: "red, f. social (de mensajería instantánea)", a: "sociální síť (s možností zasílat okamžité zprávy)"},
+        {q: "cuenta, f.", a: "účet"},
+        {q: "perfil, m.", a: "profil"},
+        {q: "tener/ abrir, crear x cerrar, cancelar, borrar", a: "otevřít, vytvořit x zavřít, zrušit, smazat"},
+        {q: "bloquear (una cuenta, un perfil)", a: "blokovat (účet, profil)"},
+        {q: "solicitud, f. de amistad", a: "nabídka přátelství"},
+        {q: "*(dejar de) seguir a alguien (en alguna red social)", a: "(přestat) sledovat někoho (na nějaké sociální síti)"},
+        {q: "seguidor/-a, m. y f.", a: "sledující"},
+        {q: "ganar x perder seguidores", a: "získat x ztratit sledující"},
+        {q: "publicación, f.", a: "příspěvek"},
+        {q: "historia, f.", a: "příběh"},
+        {q: "subir (una publicación, una foto, un vídeo)", a: "nahrát (příspěvek, fotku, video)"},
+        {q: "publicar (una publicación, una foto, un vídeo)", a: "publikovat (příspěvek, fotku, video)"},
+        {q: "colgar x eliminar (una publicación, una foto, un vídeo)", a: "zveřejnit x smazat (příspěvek, fotku, video)"},
+        {q: "retirar/compartir/ censurar (una publicación, una foto, un vídeo)", a: "zrušit/sdílet/cenzurovat (příspěvek, fotku, video)"},
+        {q: "creador/-a, m. y f. de contenido", a: "tvůrce obsahu"},
+        {q: "comunidad, f. (de seguidores)", a: "komunita (sledujících)"},
+        {q: "*ser viral/tendencia", a: "být virální, být trendy"},
+        {q: "** parecer una radio", a: "mluvit jako rádio"},
+        {q: "** echar un cable", a: "podat někomu pomocnou ruku"},
+        {q: "** ponerse las pilas", a: "zabrat, vzchopit se, máknout"},
+        {q: "** estar en la onda", a: "jít s dobou"},
+        {q: "** estar fuera de la onda/en otra onda", a: "být mimo, být jinde"},
+        {q: "** dos telediarios (o un telediario o tres telediarios)", a: "mít něco za pár"},
+
+
+    ];
+
+    // Listas dinámicas para clasificar las palabras
+    let palabrasNoConozco = [];
+    let palabrasYaConozco = [];
+    let invertido = false;
+    let filaActiva = 'no'; 
+    let idx = 0;
+
+    const cardEl = document.getElementById('c');
+    const qEl = document.getElementById('q');
+    const aEl = document.getElementById('a');
+    const sEl = document.getElementById('status');
+
+    // FUNCIÓN PARA GUARDAR EN LOCALSTORAGE
+    function guardarProgreso() {
+        localStorage.setItem('palabrasNoConozco', JSON.stringify(palabrasNoConozco));
+        localStorage.setItem('palabrasYaConozco', JSON.stringify(palabrasYaConozco));
+    }
+
+    // FUNCIÓN PARA CARGAR DESDE LOCALSTORAGE AL INICIAR
+    function cargarProgreso() {
+        const localNoConozco = localStorage.getItem('palabrasNoConozco');
+        const localYaConozco = localStorage.getItem('palabrasYaConozco');
+
+        if (localNoConozco !== null && localYaConozco !== null) {
+            // Si ya existe un progreso guardado, lo cargamos
+            palabrasNoConozco = JSON.parse(localNoConozco);
+            palabrasYaConozco = JSON.parse(localYaConozco);
+        } else {
+            // Si es la primera vez, iniciamos con la lista completa de origen
+            palabrasNoConozco = [...todasLasPalabras];
+            palabrasYaConozco = [];
+        }
+    }
+
+    // FUNCIÓN PARA REINICIAR TODO
+    function reiniciarProgreso() {
+        if (confirm("¿Seguro que quieres borrar tu progreso y empezar de cero?")) {
+            localStorage.removeItem('palabrasNoConozco');
+            localStorage.removeItem('palabrasYaConozco');
+            palabrasNoConozco = [...todasLasPalabras];
+            palabrasYaConozco = [];
+            idx = 0;
+            filaActiva = 'no';
+            document.getElementById('btn-fila-no').classList.add('active');
+            document.getElementById('btn-fila-si').classList.remove('active');
+            update();
+        }
+    }
+
+    function getListaActiva() {
+        return filaActiva === 'no' ? palabrasNoConozco : palabrasYaConozco;
+    }
+
+    function update() {
+        const lista = getListaActiva();
+        cardEl.classList.remove('flipped');
+
+        document.getElementById('count-no').innerText = palabrasNoConozco.length;
+        document.getElementById('count-si').innerText = palabrasYaConozco.length;
+
+        if (lista.length === 0) {
+            qEl.innerText = "¡Lista vacía!";
+            aEl.innerText = filaActiva === 'no' ? "¡Enhorabuena, has repasado todo!" : "No has añadido ninguna palabra aquí aún.";
+            sEl.innerText = "0 / 0";
+            return;
+        }
+
+        if (idx >= lista.length) idx = Math.max(0, lista.length - 1);
+
+        setTimeout(() => {
+            if (!invertido) {
+                qEl.innerText = lista[idx].q; 
+                aEl.innerText = lista[idx].a; 
+            } else {
+                qEl.innerText = Math.random() < 0 ? "Bug" : lista[idx].a; // Corrección visual fluida
+                aEl.innerText = lista[idx].q; 
+            }
+            sEl.innerText = `${idx + 1} / ${lista.length}`;
+        }, 100);
+    }    
+
+    function flip() { 
+        const lista = getListaActiva();
+        if (lista.length > 0) cardEl.classList.toggle('flipped'); 
+    }
+    
+    function next() { 
+        const lista = getListaActiva();
+        if(idx < lista.length - 1) { idx++; update(); } 
+    }
+    
+    function prev() { 
+        if(idx > 0) { idx--; update(); } 
+    }
+
+    function shuffle() {
+        const lista = getListaActiva();
+        if (lista.length > 0) {
+            lista.sort(() => Math.random() - 0.5);
+            idx = 0;
+            guardarProgreso(); // Guardamos el orden mezclado
+            update();
+        }
+    } 
+
+    function invertirIdiomas() {
+        invertido = !invertido;
+        document.getElementById('modo-texto').innerText = invertido ? "Checo ➡ Español" : "Español ➡ Checo";
+        update();
+    }
+ 
+    function setFila(tipo) {
+        filaActiva = tipo;
+        idx = 0;
+        
+        if (tipo === 'no') {
+            document.getElementById('btn-fila-no').classList.add('active');
+            document.getElementById('btn-fila-si').classList.remove('active');
+        } else {
+            document.getElementById('btn-fila-no').classList.remove('active');
+            document.getElementById('btn-fila-si').classList.add('active');
+        }
+        
+        update();
+    }
+
+    function clasificarPalabra(loSabe) {
+        let listaOrigen = filaActiva === 'no' ? palabrasNoConozco : palabrasYaConozco;
+        let listaDestino = filaActiva === 'no' ? palabrasYaConozco : palabrasNoConozco;
+
+        if (listaOrigen.length === 0) return;
+
+        if ((filaActiva === 'no' && !loSabe) || (filaActiva === 'si' && loSabe)) {
+            next();
+            return;
+        }
+
+        const palabraMovida = listaOrigen.splice(idx, 1)[0];
+        listaDestino.push(palabraMovida);
+
+        guardarProgreso(); // Guardamos los cambios automáticamente
+        update();
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if(e.code === 'ArrowRight') next();
+        if(e.code === 'ArrowLeft') prev();
+        if(e.code === 'Space') flip();
+    });
+
+    // PASO INICIAL: Cargar progreso antes de renderizar la primera tarjeta
+    cargarProgreso();
+    update();
+</script>
+</body>
+</html>
